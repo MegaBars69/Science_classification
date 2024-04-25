@@ -111,6 +111,7 @@ def ToFile(titles,name):
     with open(name +'.txt', 'w', encoding="utf-8") as f:
         for title in titles:
             f.write(title + '\n')
+            
 def NameToFile(name,Small):   
     res = GetTitlesandIssn(name,Small)
     titles = res[0]
@@ -121,6 +122,7 @@ def NameToFile(name,Small):
         ind.append(index.ToStr())
     ToFile(titles,'titles')
     ToFile(ind, 'indexes')
+
 
 
 
