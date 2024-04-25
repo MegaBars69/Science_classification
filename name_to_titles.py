@@ -96,22 +96,29 @@ def countX(lst, x):
             count = count + 1
     return count
 
-def ClearStr(string):
-    bad_chars = [';', ':', '!', "*", ".",",","(",")", "in", "and", "or", "at", "of", "from", "/", "i",]
-    separated_string = string.split()
-    for el in bad_chars:
-        if el in separated_string:
-            separated_string.remove(el)
-    res = ""
-    for b in range(0, len(separated_string), 1):
-        res += separated_string[b]+" "
-    return res
-
 def ToFile(titles,name): 
     with open(name +'.txt', 'w', encoding="utf-8") as f:
         for title in titles:
             f.write(title + '\n')
-            
+
+def AuthorRank(indexes_file):
+    sum = 0
+    indexes_file = open(indexes_file,'r', encoding="utf-8")
+    for line in indexes_file:
+        index = line.split(':')[2]
+        index = int(index.split(';')[0])
+        q = line.split(':')[3]
+        q = q.split(';')[0]
+        q = q.replace('Q','')
+        if(q != '-'):
+            q = int(q)
+            freq = int(line.split(':')[4])
+            if(q >=3): index = -(index * index)/100000
+            else: index = pow(index, 2)/100000
+            sum += freq * pow(2.71828, index)
+    return int(sum)
+
+
 def NameToFile(name,Small):   
     res = GetTitlesandIssn(name,Small)
     titles = res[0]
@@ -122,6 +129,9 @@ def NameToFile(name,Small):
         ind.append(index.ToStr())
     ToFile(titles,'titles')
     ToFile(ind, 'indexes')
+    print(AuthorRank('indexes.txt'))
+
+
 
 
 
