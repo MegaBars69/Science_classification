@@ -101,7 +101,7 @@ def ToFile(titles,name):
         for title in titles:
             f.write(title + '\n')
 
-def AuthorRank(indexes_file):
+def AuthorRankFromFile(indexes_file):
     sum = 0
     indexes_file = open(indexes_file,'r', encoding="utf-8")
     for line in indexes_file:
@@ -113,27 +113,25 @@ def AuthorRank(indexes_file):
         if(q != '-'):
             q = int(q)
             freq = int(line.split(':')[4])
-            if(q >=3): index = -(index * index)/100000
-            else: index = pow(index, 2)/100000
-            sum += freq * pow(2.71828, index)
-    return int(sum)
+            if(q >=3): index = -(index * index)/10000
+            else: index = pow(index, 2)/10000
+            sum += freq * pow(2.71828, index)/10
+    return sum
 
-
-def NameToFile(name,Small):   
+def AuthorRank(name,Small):
     res = GetTitlesandIssn(name,Small)
-    titles = res[0]
     issn = res[1]
     ind = []
     indexes = HIndex(issn)
     for index in indexes:
         ind.append(index.ToStr())
-    ToFile(titles,'titles')
     ToFile(ind, 'indexes')
-    print(AuthorRank('indexes.txt'))
+    return AuthorRankFromFile(('indexes.txt'))
+    
 
-
-
-
-
-
-
+def NameToFile(name,Small):   
+    res = GetTitlesandIssn(name,Small)
+    titles = res[0]
+    ToFile(titles,'titles')
+    rank = AuthorRank(name,Small)
+    return rank
