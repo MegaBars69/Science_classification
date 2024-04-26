@@ -7,7 +7,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
 import pickle
 import pandas as pd
-from name_to_titles import NameToFile
+from name_to_titles import *
 
 stop_words = set(stopwords.words('english'))
 stop_words.add('said')
@@ -148,7 +148,8 @@ if __name__ == '__main__':
     #titles = ['Nijenhuis geometry II: Left-symmetric algebras and linearization problem for Nijenhuis operators', 'Linear induction machines for electrodynamic separation of non-ferrous metals', 'Linear induction machines with the opposite direction travelling magnetic fields for induction heating', 'Application of linear inductors with opposite direction travelling magnetic fields in eddy-current separators', 'Investigation of Double-Purpose Linear Induction Motors', 'Orthogonal separation of variables for spaces of constant curvature', 'Applications of Nijenhuis geometry II: maximal pencils of multi-Hamiltonian structures of hydrodynamic type', 'When a (1,1)-tensor generates separation of variables of a certain metric', 'Applications of Nijenhuis Geometry V: Geodesic Equivalence and Finite-Dimensional Reductions of Integrable Quasilinear Systems', 'Applications of Nijenhuis geometry IV: Multicomponent KdV and Camassa–Holm equations', 'Comparison of Electrodynamic Separators with a Traveling Magnetic Field with Different Designs of Inductors', 'Applications of Nijenhuis Geometry III: Frobenius Pencils and Compatible Non-homogeneous Poisson Structures', 'Applications of Nijenhuis geometry: non-degenerate singular points of Poisson–Nijenhuis structures', 'Remote detection and recognition of bio-aerosols by laser-induced fluorescense lidar: practical implementation and field tests', 'Sample title', 'Prevalence of causative agents of respiratory infections in cats and dogs in Russia', 'On the Linearization of Certain Singularities   of Nijenhuis Operators']
     #ListToCategory(titles)
     #NameToCategories('Konyaev',True) 
-    
+    #print(AuthorRank('Kudryavtseva+Elena',True))
+    #print(AuthorRank('Andrey+Konyaev',True))
     
 
 
