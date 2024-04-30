@@ -1,7 +1,7 @@
 from Utils.train_model import *
 from name_to_titles import *
 
-def classify(text):
+def classify(text : str):
     """Classifies string, return string"""
     clf_filename = 'weights/' + 'Areas.pkl'
     nb_clf = pickle.load(open(clf_filename, 'rb'))
@@ -21,12 +21,12 @@ def classify(text):
 
     return area_pred[0] + '(' + category_pred[0] + ')'
 
-def NameToCategories(name, Small = False):
+def NameToCategories(name : str, Small = False):
     """Make list of titles and classifies them.Classifies author's works.
     @param :Take author's name 
     @param :Second parametr is used if you want to use 'next-cursor'(more works). 
     Creates 3 files 'titles.txt' , 'indexes.txt' (ISSN indexes) and 'output.txt'"""
-    NameToFile(name,Small)
+    print(NameToFile(name,Small))
     file = open('titles.txt', 'r', encoding="utf-8")
     file = file.read()
     file = file.split('\n')
@@ -36,7 +36,7 @@ def NameToCategories(name, Small = False):
                 f.write(classify(title) + '\n')
                 print(classify(title).replace('_',' ') + ' – ' + title + '\n')
 
-def ListToCategory(list):
+def ListToCategory(list : list):
     for item in list:
         print(classify(item).replace('_',' ') + ' – ' + item + '\n')
 
@@ -44,7 +44,8 @@ if __name__ == '__main__':
     """Here some examples to check program"""
     #titles = ['Nijenhuis geometry II: Left-symmetric algebras and linearization problem for Nijenhuis operators', 'Linear induction machines for electrodynamic separation of non-ferrous metals', 'Linear induction machines with the opposite direction travelling magnetic fields for induction heating', 'Application of linear inductors with opposite direction travelling magnetic fields in eddy-current separators', 'Investigation of Double-Purpose Linear Induction Motors', 'Orthogonal separation of variables for spaces of constant curvature', 'Applications of Nijenhuis geometry II: maximal pencils of multi-Hamiltonian structures of hydrodynamic type', 'When a (1,1)-tensor generates separation of variables of a certain metric', 'Applications of Nijenhuis Geometry V: Geodesic Equivalence and Finite-Dimensional Reductions of Integrable Quasilinear Systems', 'Applications of Nijenhuis geometry IV: Multicomponent KdV and Camassa–Holm equations', 'Comparison of Electrodynamic Separators with a Traveling Magnetic Field with Different Designs of Inductors', 'Applications of Nijenhuis Geometry III: Frobenius Pencils and Compatible Non-homogeneous Poisson Structures', 'Applications of Nijenhuis geometry: non-degenerate singular points of Poisson–Nijenhuis structures', 'Remote detection and recognition of bio-aerosols by laser-induced fluorescense lidar: practical implementation and field tests', 'Sample title', 'Prevalence of causative agents of respiratory infections in cats and dogs in Russia', 'On the Linearization of Certain Singularities   of Nijenhuis Operators']
     #ListToCategory(titles)
-    #NameToCategories('Konyaev',True) 
+    #NameToCategories('Andrey+Konyaev',True) 
     #print(AuthorRank('Kudryavtseva+Elena',True))
     #print(AuthorRank('Andrey+Konyaev',True))
+    
     

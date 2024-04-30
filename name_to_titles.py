@@ -113,8 +113,8 @@ def AuthorRankFromFile(indexes_file):
         if(q != '-'):
             q = int(q)
             freq = int(line.split(':')[4])
-            if(q >=3): index = -(index * index)/10000
-            else: index = pow(index, 2)/10000
+            if(q >=3): index = -(index * index)/1000
+            else: index = pow(index, 2)/1000
             sum += freq * pow(2.71828, index)/10
     return sum
 
@@ -132,6 +132,12 @@ def AuthorRank(name,Small):
 def NameToFile(name,Small):   
     res = GetTitlesandIssn(name,Small)
     titles = res[0]
+    issn = res[1]
+    ind = []
+    indexes = HIndex(issn)
+    for index in indexes:
+        ind.append(index.ToStr())
     ToFile(titles,'titles')
-    rank = AuthorRank(name,Small)
+    ToFile(ind, 'indexes')
+    rank = AuthorRankFromFile(('indexes.txt'))
     return rank
