@@ -1,5 +1,5 @@
 from Utils.train_model import *
-from name_to_titles import *
+from Utils.name_to_titles import *
 
 def classify(text : str):
     """Classifies string, return string"""
