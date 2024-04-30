@@ -9,9 +9,6 @@ import pickle
 import pandas as pd
 from Utils.name_to_titles import *
 
-stop_words = set(stopwords.words('english'))
-stop_words.add('said')
-stop_words.add('mr')
 
 def setup_docs(filename):
     docs = [] #(label, text)
@@ -30,6 +27,9 @@ def clean_text(text):
 
 def get_tokens(text):
     tokens = word_tokenize(text)
+    stop_words = set(stopwords.words('english'))
+    stop_words.add('said')
+    stop_words.add('mr')
     tokens = [t for t in tokens if t not in stop_words]
     return tokens
 

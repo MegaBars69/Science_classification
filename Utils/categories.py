@@ -6,7 +6,7 @@ from contextlib import suppress
 
 
 
-def ClearStr(string):
+def ClearStr(string: str):
     bad_chars = [';', ':', '!', "*", ".",",","(",")","'\'", "/", "i","'",'"',',']
     string = string.replace('(Q1)','')
     string = string.replace('(Q2)','')
@@ -25,7 +25,7 @@ def ClearStr(string):
         res += separated_string[b]+" "
     return res
 
-def journals_analize(Area):
+def journals_analize(Area : str):
     data = open('journals.csv','r')
     i = 0
     docs = []
@@ -43,11 +43,11 @@ def journals_analize(Area):
     print(docs)
     return docs
 
-def issn_to_file(filename, issn):
+def issn_to_file(filename: str, issn : str):
     i = 0
     titles = []
     try:    
-        for item in data: 
+        for item in journals.works(issn): 
             if(i<=3500):
                 if('title' in item):
                     i += 1
