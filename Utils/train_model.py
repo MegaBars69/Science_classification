@@ -7,7 +7,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
 import pickle
 import pandas as pd
-from name_to_titles import *
+from Utils.name_to_titles import *
 
 stop_words = set(stopwords.words('english'))
 stop_words.add('said')
