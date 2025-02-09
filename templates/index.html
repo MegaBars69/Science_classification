@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПОИСК ЭКСПЕРТОВ</title>
+    <style>
+        .results-container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .results-section {
+            width: 48%;
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: #023e73;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            width: 80%;
+            margin: 20px auto;
+        }
+
+        .form-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-size: 1.2em;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 1em;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 150px;
+        }
+
+        button {
+            background-color: #023e73;
+            color: white;
+            padding: 12px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #023e73;
+        }
+
+        .result {
+            margin-top: 40px;
+        }
+
+        .result h2 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+
+        .person-card {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .person-card h3 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .person-card p {
+            font-size: 1.1em;
+            margin: 5px 0;
+        }
+
+        .person-card .index {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        /* Info Button styling */
+        .info-button {
+            background-color: #023e73;
+            color: white;
+            padding: 10px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: auto;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .info-button:hover {
+            background-color: #023e73;
+        }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 100px;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 1000px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .reference-list {
+            margin-top: 20px;
+        }
+
+        .reference-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .loading {
+            display: none; /* Скрыто по умолчанию */
+            position: fixed;
+            top: 37%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000; /* Чтобы иконка была поверх других элементов */
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 id="headerTitle" style="cursor: pointer;">ПОИСК ЭКСПЕРТОВ</h1>
+    </header>
+    <div class="container">
+        <div class="form-container">
+            <form method="POST" id="searchForm">
+                <label for="query_title">Название запроса:</label>
+                <input type="text" id="query_title" name="query_title" value="{{ query_title or '' }}" required>
+
+                <label for="query_content">Содержание запроса:</label>
+                <textarea id="query_content" name="query_content" rows="4" required>{{ query_content or '' }}</textarea>
+
+                <button type="submit">Отправить</button>
+            </form>
+        </div>
+
+        <div class="results-container">
+            <div class="results-section">
+                <h2>Результаты на русском для запроса "{{ query_title }}"</h2>
+                {% if results_rus %}
+                    {% for person in results_rus %}
+                        <div class="person-card">
+                            <h3>Автор: {{ person.author }}</h3>
+                            <p><strong>Title:</strong> {{ person.title }}</p>
+                            <p><strong>Category:</strong> {{ person.category }}</p>
+                            <p><strong>Source:</strong> {{ person.source }}</p>
+                            <p class="index"><strong>Index:</strong> {{ person.index }}</p>
+                            <button class="info-button" data-author="{{ person.author }}">Info</button>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Никаких результатов не найдено.</p>
+                {% endif %}
+            </div>
+
+            <div class="results-section">
+                <h2>Результаты на английском для запроса "{{ query_title }}"</h2>
+                {% if results_eng %}
+                    {% for person in results_eng %}
+                        <div class="person-card">
+                            <h3>Автор: {{ person.author }}</h3>
+                            <p><strong>Title:</strong> {{ person.title }}</p>
+                            <p><strong>Category:</strong> {{ person.category }}</p>
+                            <p><strong>Source:</strong> {{ person.source }}</p>
+                            <p class="index"><strong>Index:</strong> {{ person.index }}</p>
+                            <button class="info-button" data-author="{{ person.author }}">Info</button>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Никаких результатов не найдено.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Иконка загрузки -->
+    <div id="loading" class="loading">
+        <p>Поиск может занять 3 - 5 минут</p>
+        <img src="{{ url_for('static', filename='loading.gif') }}" alt="Загрузка..." />
+    </div>
+
+    <!-- Modal structure remains unchanged -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Ссылки</h2>
+            <div id="referencesList" class="reference-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Show Modal and populate it with reference data
+        function showModal(references) {
+            const referencesList = document.getElementById("referencesList");
+            referencesList.innerHTML = ""; // Clear previous references
+
+            // Loop through the references and display them as clickable links
+            references.forEach(function(reference) {
+                const div = document.createElement("div");
+                div.classList.add("reference-item");
+
+                // Create a link (anchor tag) for each reference
+                const link = document.createElement("a");
+                link.href = reference; // This will be the URL
+                link.target = "_blank"; // Opens the link in a new tab
+                link.textContent = reference; // Display the URL text
+
+                div.appendChild(link);
+                referencesList.appendChild(div);
+            });
+
+            // Show the modal
+            document.getElementById("infoModal").style.display = "block";
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById("infoModal").style.display = "none";
+        }
+
+        // Add event listeners to all "Info" buttons
+        document.querySelectorAll('.info-button').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const author = button.getAttribute('data-author');
+                
+                // Send AJAX request to fetch references
+                fetch('/get_references', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ author: author })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Show the modal with the references data
+                    showModal(data);
+                })
+                .catch(error => {
+                    console.error("Error fetching references:", error);
+                });
+            });
+        });
+
+        // Header click functionality
+        document.getElementById('headerTitle').addEventListener('click', function() {
+            // Clear the form fields
+            document.getElementById('query_title').value = '';
+            document.getElementById('query_content').value = '';
+            // Redirect to the main page
+            window.location.href = '/'; // Перенаправление на главную страницу
+        });
+
+        // Show loading icon on form submit
+        document.getElementById('searchForm').addEventListener('submit', function() {
+            document.getElementById('loading').style.display = 'block'; // Показать иконку загрузки
+        });
+    </script>
+
+</body>
+</html>
