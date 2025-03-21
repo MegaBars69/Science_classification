@@ -51,4 +51,4 @@ def get_references():
 
 if __name__ == '__main__': 
     dict_data = load_istina_data()
-    app.run(debug=True) 
+    app.run(debug=True, host='0.0.0.0')
