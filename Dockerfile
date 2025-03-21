@@ -18,8 +18,6 @@ RUN pip install --upgrade wheel
 RUN pip install --no-cache-dir spacy
 RUN pip install -Ur requirements.txt
 
-
-
 FROM python:3.12.9-slim as runner
 
 WORKDIR /app/
@@ -27,6 +25,13 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY --from=compiler /opt/venv /opt/venv
 
 COPY . /app/
+
+RUN python -m nltk.downloader punkt
+RUN python -m nltk.downloader stopwords
+RUN python -m nltk.downloader wordnet
+RUN python -m spacy download en_core_web_sm
+RUN python -m spacy download en_core_web_md
+RUN python -m spacy download ru_core_news_md
 
 # Enable venv
 CMD ["python", "app.py"]
