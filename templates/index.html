@@ -94,7 +94,7 @@
         }
 
         .person-card {
-            background-color: white;
+            position: relative; /* Для позиционирования короны */
             padding: 20px;
             margin-bottom: 20px;
             border-radius: 8px;
@@ -190,6 +190,29 @@
             z-index: 1000; /* Чтобы иконка была поверх других элементов */
             text-align: center;
         }
+
+        /* Цвета с прозрачностью */
+        .gold {
+            background-color: rgba(255, 215, 0, 0.5); /* Золотой с 50% прозрачностью */
+        }
+        .silver {
+            background-color: rgba(192, 192, 192, 0.5); /* Серебряный с 50% прозрачностью */
+        }
+        .bronze {
+            background-color: rgba(205, 127, 50, 0.5); /* Бронзовый с 50% прозрачностью */
+        }
+        .white {
+            background-color: rgba(255, 255, 255, 1); /* Белый без прозрачности */
+        }
+
+        /* Стили для корон */
+        .crown {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px; /* Ширина короны */
+            height: auto; /* Автоматическая высота */
+        }
     </style>
 </head>
 <body>
@@ -214,7 +237,9 @@
             <div class="results-section">
                 <h2>Результаты на русском для запроса "{{ query_title }}"</h2>
                 {% if results_rus %}
+                    {% set max_index_rus = results_rus | map(attribute='index') | max %}
                     {% for person in results_rus %}
+                        {% set index_diff = max_index_rus - person.index %}
                         <div class="person-card">
                             <h3>Автор: {{ person.author }}</h3>
                             <p><strong>Title:</strong> {{ person.title }}</p>
@@ -222,6 +247,13 @@
                             <p><strong>Source:</strong> {{ person.source }}</p>
                             <p class="index"><strong>Index:</strong> {{ person.index }}</p>
                             <button class="info-button" data-author="{{ person.author }}">Info</button>
+                            {% if index_diff < 0.04 %}
+                                <img src="{{ url_for('static', filename='gold_crown.png') }}" class="crown" alt="Gold Crown">
+                            {% elif index_diff < 0.07 %}
+                                <img src="{{ url_for('static', filename='silver_crown.png') }}" class="crown" alt="Silver Crown">
+                            {% elif index_diff < 0.1 %}
+                                <img src="{{ url_for('static', filename='bronze_crown.png') }}" class="crown" alt="Bronze Crown">
+                            {% endif %}
                         </div>
                     {% endfor %}
                 {% else %}
@@ -232,7 +264,9 @@
             <div class="results-section">
                 <h2>Результаты на английском для запроса "{{ query_title }}"</h2>
                 {% if results_eng %}
+                    {% set max_index_eng = results_eng | map(attribute='index') | max %}
                     {% for person in results_eng %}
+                        {% set index_diff = max_index_eng - person.index %}
                         <div class="person-card">
                             <h3>Автор: {{ person.author }}</h3>
                             <p><strong>Title:</strong> {{ person.title }}</p>
@@ -240,6 +274,13 @@
                             <p><strong>Source:</strong> {{ person.source }}</p>
                             <p class="index"><strong>Index:</strong> {{ person.index }}</p>
                             <button class="info-button" data-author="{{ person.author }}">Info</button>
+                            {% if index_diff < 0.04 %}
+                                <img src="{{ url_for('static', filename='gold_crown.png') }}" class="crown" alt="Gold Crown">
+                            {% elif index_diff < 0.07 %}
+                                <img src="{{ url_for('static', filename='silver_crown.png') }}" class="crown" alt="Silver Crown">
+                            {% elif index_diff < 0.1 %}
+                                <img src="{{ url_for('static', filename='bronze_crown.png') }}" class="crown" alt="Bronze Crown">
+                            {% endif %}
                         </div>
                     {% endfor %}
                 {% else %}

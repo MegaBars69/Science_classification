@@ -14,10 +14,10 @@ from text_classifier import *
 cr = Crossref()
 import string
 from nltk.stem import WordNetLemmatizer
-
+import time
 import spacy
 import numpy as np
-
+import asyncio
 # Load the spaCy model
 from nltk.stem import PorterStemmer
 
@@ -26,47 +26,98 @@ import torch
 from scipy.spatial.distance import cosine
 
 from search_in_csv import istina_search
-from transformers import BertTokenizer, BertForSequenceClassification
-import torch
-from scipy.spatial.distance import cosine
-from transformers import BertTokenizer, BertModel
-import torch
-from scipy.spatial.distance import cosine
+from transformers import BertForSequenceClassification
 
-from transformers import BertTokenizer, BertModel
+from sklearn.metrics.pairwise import cosine_similarity
+stop_words_eng = set(stopwords.words('english'))
+stop_words_rus = set(stopwords.words('russian'))
+
 import torch
+from transformers import DistilBertTokenizer, DistilBertModel
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Функция для получения векторов из BERT
-def get_bert_embedding_rus(text):
-    tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
-    model = BertModel.from_pretrained('bert-base-multilingual-cased')
-    
-    inputs = tokenizer(text, return_tensors='pt', padding=True, truncation=True)
-    outputs = model(**inputs)
-    
-    # Получаем вектор из последнего скрытого слоя
-    return outputs.last_hidden_state.mean(dim=1).detach().numpy()
+# Загрузка токенизатора и модели DistilBERT
+tokenizer_rus = DistilBertTokenizer.from_pretrained('distilbert-base-multilingual-cased')
+model_rus = DistilBertModel.from_pretrained('distilbert-base-multilingual-cased')
+model_rus.eval()  # Установка модели в режим оценки
 
-# Функция для сравнения текстов с использованием BERT
-def compare_similarity_bert_rus(text1, vectorized_text2):
-    vec1 = get_bert_embedding_rus(text1)
+# Перемещение модели на GPU, если доступно
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model_rus.to(device)
+
+# Функция для получения векторов из DistilBERT
+def get_distilbert_embeddings_rus(text):
+    inputs = tokenizer_rus(text, return_tensors='pt', padding=True, truncation=True).to(device)
+    with torch.no_grad():
+        outputs = model_rus(**inputs)
+    # Получаем вектор из последнего скрытого слоя
+    return outputs.last_hidden_state.mean(dim=1).detach().cpu().numpy()
+
+def get_bert_embeddings_rus(texts):
+    # Токенизация пакета текстов
+    inputs = tokenizer_rus(texts, return_tensors='pt', padding=True, truncation=True).to(device)
+    
+    with torch.no_grad():
+        # Получаем выходные данные из модели DistilBERT
+        outputs = model_rus(**inputs)
+    
+    # Получаем векторы для [CLS] токена (или усредняем по всем токенам)
+    embeddings = outputs.last_hidden_state.mean(dim=1)  # Усреднение по всем токенам
+    return embeddings.cpu().numpy()  # Конвертация в numpy массив и возврат на CPU
+
+# Функция для сравнения текстов с использованием DistilBERT
+def compare_similarity_bert_batch_rus(texts1, vectorized_text2):
+    embeddings1 = get_bert_embeddings_rus(texts1)
     
     # Вычисляем косинусное сходство
-    similarity = cosine_similarity(vec1, vectorized_text2)
+    similarities = []
+    for emb1 in embeddings1:
+        similarity = cosine_similarity(emb1.reshape(1, -1), vectorized_text2)
+        similarities.append(similarity[0][0])  # Сохраняем только одно значение сходства
     
-    return similarity[0][0]
+    return similarities
+
+
+tokenizer_eng = BertTokenizer.from_pretrained('bert-base-uncased')
+model_eng = BertModel.from_pretrained('bert-base-uncased')
+model_eng.eval()  # Set the model to evaluation mode
+
+# Move the model to GPU if available
+model_eng.to(device)
+
+def get_bert_embeddings_batch_eng(texts):
+    # Tokenize the batch of texts
+    inputs = tokenizer_eng(texts, return_tensors='pt', padding=True, truncation=True).to(device)
+    
+    with torch.no_grad():
+        # Get the outputs from the BERT model
+        outputs = model_eng(**inputs)
+    
+    # Get the embeddings for the [CLS] token (or average over all tokens)
+    embeddings = outputs.last_hidden_state.mean(dim=1)  # Average over all tokens
+    return embeddings.cpu().numpy()  # Convert to numpy array and return to CPU
+
+def compare_similarity_bert_batch_eng(texts1, emb_of_main):
+    # Get embeddings for both batches of texts
+    embeddings1 = get_bert_embeddings_batch_eng(texts1)
+    
+    # Calculate cosine similarities
+    similarities = []
+    for emb1 in embeddings1:
+        similarity = 1 - cosine(emb1, emb_of_main)
+        similarities.append(similarity)
+    
+    return similarities
+
 
 def get_bert_embeddings_eng(text):
     # Загрузка модели BERT и токенизатора
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    model = BertModel.from_pretrained('bert-base-uncased')
-
+    
     # Токенизация текста
-    inputs = tokenizer(text, return_tensors='pt', padding=True, truncation=True)
+    inputs = tokenizer_eng(text, return_tensors='pt', padding=True, truncation=True)
     with torch.no_grad():
         # Получение выходных данных из модели BERT
-        outputs = model(**inputs)
+        outputs = model_eng(**inputs)
     
     # Получаем вектор, соответствующий [CLS] токену (используем его как представление всего текста)
     embeddings = outputs.last_hidden_state.mean(dim=1)  # Среднее по всем токенам
@@ -88,7 +139,7 @@ def extract_important_words_en(text):
     doc = nlp(text)
     
     # Extract nouns and verbs (which tend to have more significance in a sentence)
-    words = [token.lemma_ for token in doc if token.pos_ in ["NOUN", "VERB"] and not token.is_stop]
+    words = [token.lemma_ for token in doc if (not token.is_stop or token.is_digit) and not token.is_punct]
     
     return words
 
@@ -100,7 +151,7 @@ def extract_important_words_ru(text):
     doc = nlp(text)
     
     # Extract nouns and verbs (which tend to have more significance in a sentence)
-    words = [token.lemma_ for token in doc if token.pos_ in ["NOUN", "VERB"] and not token.is_stop]
+    words = [token.lemma_ for token in doc if (not token.is_stop or token.is_digit) and not token.is_punct]
     
     return words
 
@@ -195,7 +246,7 @@ def get_titles_with_keywords(keywords):
     
     return results
 
-def translate_file(input_file_path, output_file_path):
+async def translate_file(input_file_path, output_file_path):
     # Create a Translator object
     translator = Translator()
 
@@ -204,7 +255,7 @@ def translate_file(input_file_path, output_file_path):
         russian_text = file.read()
 
     # Translate the text from Russian to English
-    translated_text = translator.translate(russian_text, src='ru', dest='en').text
+    translated_text = await translator.translate(russian_text, src='ru', dest='en')
 
     # Write the translated text to the output file
     with open(output_file_path, 'w', encoding='utf-8') as file:
@@ -318,6 +369,20 @@ def write_titles_sorted_by_index(titles_authors, output_file_path, key_words):
 
     print(f"Titles written to {output_file_path} sorted by index.")
 
+
+def remove_stop_words(text,lang):
+    words = word_tokenize(text.lower())
+    words_title = ""
+    if lang == 'eng':
+        stop_words = stop_words_eng
+    else:
+        stop_words = stop_words_rus
+
+    for word in words:
+        if word.isalpha() and word not in stop_words:
+            words_title += word + " "
+    return words_title
+
 def sort_titles_by_index_eng(titles_authors, key_words):
     # Collect all titles with their authors and indices
     all_titles = []
@@ -326,19 +391,14 @@ def sort_titles_by_index_eng(titles_authors, key_words):
         sentence_of_key_words += " " + word
     
     vectorized_title = get_bert_embeddings_eng(sentence_of_key_words)
-    for title, authors, sour in titles_authors:
-        words = word_tokenize(title.lower())
-    
-        # Remove stop words and non-alphabetic tokens
-        stop_words = set(stopwords.words('english'))
-        words_title = ""
-        for word in words:
-            if word.isalpha() and word not in stop_words:
-                words_title += word + " "
-        
 
-        index = compare_similarity_bert_eng(words_title, vectorized_title)  # Calculate the index for the title
-        all_titles.append((title, authors, index,sour))  # Store title, authors, and index
+    titles = [remove_stop_words(el[0],'eng') for el in titles_authors]
+    authors = [el[1] for el in titles_authors]
+    sourses = [el[2] for el in titles_authors]
+
+    indexes = compare_similarity_bert_batch_eng(titles, vectorized_title)  # Calculate the index for the title
+    
+    all_titles = list(zip((el[0] for el in titles_authors), authors, indexes,sourses))  # Store title, authors, and index
 
     # Sort all titles by index in descending order
     sorted_titles = sorted(all_titles, key=lambda x: x[2], reverse=True)
@@ -349,25 +409,21 @@ def sort_titles_by_index_eng(titles_authors, key_words):
     return sorted_titles_list
 
 def sort_titles_by_index_rus(titles_authors, key_words):
-    # Collect all titles with their authors and indices
     all_titles = []
     sentence_of_key_words = ""
     for word in key_words:
         sentence_of_key_words += " " + word
     
-    vectorized_title = get_bert_embedding_rus(sentence_of_key_words)
-    for title, authors, sour in titles_authors:
-        words = word_tokenize(title.lower())
+    vectorized_title = get_bert_embeddings_rus(sentence_of_key_words)
+    vectorized_title = vectorized_title.reshape(1, -1)
+
+    titles = [remove_stop_words(el[0],'rus') for el in titles_authors]
+    authors = [el[1] for el in titles_authors]
+    sourses = [el[2] for el in titles_authors]
+
+    indexes = compare_similarity_bert_batch_rus(titles, vectorized_title)  # Calculate the index for the title
     
-        # Remove stop words and non-alphabetic tokens
-        stop_words = set(stopwords.words('russian'))
-        words_title = ""
-        for word in words:
-            if word.isalpha() and word not in stop_words:
-                words_title += word + " "
-    
-        index = compare_similarity_bert_rus(words_title, vectorized_title)  # Calculate the index for the title
-        all_titles.append((title, authors, index,sour))  # Store title, authors, and index
+    all_titles = list(zip((el[0] for el in titles_authors), authors, indexes,sourses))  # Store title, authors, and index
 
     # Sort all titles by index in descending order
     sorted_titles = sorted(all_titles, key=lambda x: x[2], reverse=True)
@@ -376,7 +432,7 @@ def sort_titles_by_index_rus(titles_authors, key_words):
     for title, authors, index,sour in sorted_titles:
         sorted_titles_list.append({'author': authors, 'title': title, 'index': index, 'references' : [], 'category' : 'classify(title)', 'source':sour})
     return sorted_titles_list
-
+    
 def extract_important_words_and_bigrams(sentence):
     # Define stopwords list
     stop_words = set(stopwords.words('english'))
@@ -427,8 +483,9 @@ def extract_key_phrases(text):
     
     return key_phrases
 
+lemmatizer = WordNetLemmatizer()
+
 def get_word_forms(words):
-    lemmatizer = WordNetLemmatizer()
     word_forms = set()
 
     for word in words:
@@ -487,14 +544,16 @@ def search_crossref(keywords):
     return answer
 
 
-def get_people_from_query_eng(query_title, query_content):
+async def get_people_from_query_eng(query_title, query_content, dict_data):
     # Get the input file path from the user
     translator = Translator()
-    input_title_name_eng = translator.translate(query_title, src='ru', dest='en').text
-
+    input_title_name_eng = await translator.translate(query_title, src='ru', dest='en')
+    input_title_name_eng = input_title_name_eng.text
     #ENGLISH SEARCH
-    input_text_eng = translator.translate(query_content, src='ru', dest='en').text
-    topic, keywords_eng = extract_topic_and_keywords_eng(input_text_eng, 5)
+    start_time = time.time()
+
+    input_text_eng = await translator.translate(query_content, src='ru', dest='en')
+    topic, keywords_eng = extract_topic_and_keywords_eng(input_text_eng.text, 6)
     title_main_words_eng = extract_important_words_en(input_title_name_eng)
     all_keywords_eng = get_word_forms(list(set(keywords_eng + title_main_words_eng)))
     
@@ -503,25 +562,45 @@ def get_people_from_query_eng(query_title, query_content):
     # Remove stop words and non-alphabetic tokens
     stop_words = set(stopwords.words('english'))
     filtered_words_eng = [word for word in words if word.isalpha() and word not in stop_words]
-    print("Important words", all_keywords_eng)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Important words: ",all_keywords_eng )
+    print(execution_time)
 
     # Crossref Search
-    titles_authors = search_crossref(all_keywords_eng)
-    print("Crossref searched")
-    #Istina search
-    titles_from_istina = istina_search(all_keywords_eng)
-    print("Istina searched")
+    start_time = time.time()
 
+    titles_authors = search_crossref(all_keywords_eng)
+    end_time = time.time()
+    execution_time = end_time - start_time
+
+    print("Crossref searched")
+    print(execution_time)
+    #Istina search
+    start_time = time.time()
+    titles_from_istina = istina_search(all_keywords_eng, dict_data)
+    end_time = time.time()
+    execution_time = end_time - start_time
+
+    print("Istina searched")
+    print(execution_time)
     all_authors = titles_authors + titles_from_istina
+    start_time = time.time()
 
     #write_titles_sorted_by_index(titles_authors, output_file_path, keywords)
     sort_res_eng = sort_titles_by_index_eng(all_authors, filtered_words_eng + keywords_eng)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Sorted")
+    print(execution_time)
     return sort_res_eng
 
-def get_people_from_query_rus(query_title, query_content):
+def get_people_from_query_rus(query_title, query_content, dict_data):
+    
+    start_time = time.time()
 
     #RUSSIAN SEARCH    
-    topic, keywords_rus = extract_topic_and_keywords_ru(query_content, 7)
+    topic, keywords_rus = extract_topic_and_keywords_ru(query_content, 6)
     title_main_words_rus = extract_important_words_ru(query_title)
     all_keywords_rus = get_word_forms(list(set(keywords_rus + title_main_words_rus)))
     
@@ -530,25 +609,43 @@ def get_people_from_query_rus(query_title, query_content):
     # Remove stop words and non-alphabetic tokens
     stop_words = set(stopwords.words('russian'))
     filtered_words_rus = [word for word in words if word.isalpha() and word not in stop_words]
+    end_time = time.time()
+    execution_time = end_time - start_time
     print("Important words", all_keywords_rus)
+    print(execution_time)
 
+    start_time = time.time()
     # Crossref Search
     titles_authors_rus = search_crossref(all_keywords_rus)
+    end_time = time.time()
+    execution_time = end_time - start_time
     print("Crossref searched")
+    print(execution_time)
+    
+    start_time = time.time()
+
     #Istina search
-    titles_from_istina_rus = istina_search(all_keywords_rus)
+    titles_from_istina_rus = istina_search(all_keywords_rus,dict_data)
+    end_time = time.time()
+    execution_time = end_time - start_time
     print("Istina searched")
+    print(execution_time)
+
+    start_time = time.time()
 
     all_authors_rus = titles_authors_rus + titles_from_istina_rus
  
     #write_titles_sorted_by_index(titles_authors, output_file_path, keywords)
     sort_res_rus = sort_titles_by_index_rus(all_authors_rus, filtered_words_rus + keywords_rus)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(execution_time)
 
     return sort_res_rus
 
 def write_list_to_file(file_path, lines):
     """
-    Writes each string or dictionary from the list 'lines' to a file specified by 'file_path', 
+    Writes each ring or dictionary from the list 'lines' to a file specified by 'file_path', 
     with each entry on a new line.
 
     :param file_path: The path to the file where the lines will be written.
@@ -564,24 +661,27 @@ def write_list_to_file(file_path, lines):
                 file.write(line + '\n')
    
 if __name__ == "__main__":
-
+    
+    """
     query_title = "Разработка трехмерного акустического расчетного кода"
     query_content = "Разработать трехмерный акустический расчетный код, применимый для расчета распространения шума в каналах турбомашин, а также во входных и выходных устройствах авиационных двигателей Обеспечить в расчетном коде следующие возможности: 1. выполнять расчеты на структурированных и неструктурированных расчетных сетках. Иметь инструменты построения расчетных сеток и/или их импорта, 2. выполнять расчеты на расчетных сетках размерностью не менее 1,5 млрд. ячеек 3. учитывать неоднородное стационарное среднее течение внутри расчетной области, 4. использовать средние газодинамические поля, рассчитанные в сторонних решателях (таких как Ansys CFX и Fluent, Логос), 5. учитывать звукопоглощающие конструкции на поверхностях каналов в виде импедансных граничных условий, 6. задавать неотражающие граничных условий, моделирующие уход волн из расчетной области без отражений, 7. задавать модальные граничные условий для вноса возмущений в расчетную область в виде суперпозиции собственных форм акустических колебаний для цилиндрического, кольцевого и прямоугольного каналов на различных частотах, 8. иметь Linux реализацию, 9. поддерживать параллелизацию между вычислительными узлами."
+    
+    write_list_to_file('answ.txt',get_people_from_query_eng(query_title, query_content))
     
     translator = Translator()
     input_title_name_eng = translator.translate(query_title, src='ru', dest='en').text
 
     #ENGLISH SEARCH
     input_text_eng = translator.translate(query_content, src='ru', dest='en').text
-    topic, keywords_eng = extract_topic_and_keywords_eng(input_text_eng, 5)
+    print(input_title_name_eng)
+    topic, keywords_eng = extract_topic_and_keywords_eng(input_text_eng, 7)
     print(keywords_eng)
     title_main_words_eng = extract_important_words_en(input_title_name_eng)
-    print(title_main_words_eng)
+    print(ti_main_words_eng)
     all_keywords_eng = get_word_forms(list(set(keywords_eng + title_main_words_eng)))
     print(all_keywords_eng)
     
     
-    """
     # Example usage
     if __name__ == "__main__":
         first_name = input("Enter first name: ").strip()
@@ -593,3 +693,4 @@ if __name__ == "__main__":
         for index, profile in enumerate(profiles, start=1):
             print(f"{index}. {profile}")
     """
+
