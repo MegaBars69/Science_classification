@@ -543,17 +543,44 @@ def search_crossref(keywords):
                 answer.append((title, author_names, 'Crossref'))
     return answer
 
+from googletrans import Translator
+from deep_translator import GoogleTranslator
+import re
+
+def translate_ru_to_en(text: str, chunk_size: int = 500) -> str:
+    if not text.strip():
+        return ""
+
+    # Попытка через googletrans
+    try:
+        translator = Translator()
+        if len(text) <= chunk_size:
+            return translator.translate(text, src='ru', dest='en').text
+        else:
+            chunks = [chunk.strip() for chunk in re.split(r'(?<=[.!?])\s+', text) if chunk.strip()]
+            translated_chunks = []
+            for chunk in chunks:
+                if len(chunk) > chunk_size:
+                    sub_chunks = [chunk[i:i+chunk_size] for i in range(0, len(chunk), chunk_size)]
+                    translated_sub = [translator.translate(sub, src='ru', dest='en').text for sub in sub_chunks]
+                    translated_chunks.append(" ".join(translated_sub))
+                else:
+                    translated_chunks.append(translator.translate(chunk, src='ru', dest='en').text)
+            return " ".join(translated_chunks)
+    except Exception as e:
+        try:
+            return GoogleTranslator(source='ru', target='en').translate(text)
+        except Exception as e:
+            print(f"Ошибка deep_translator: {e}")
+            return None
 
 async def get_people_from_query_eng(query_title, query_content, dict_data):
-    # Get the input file path from the user
     translator = Translator()
-    input_title_name_eng = await translator.translate(query_title, src='ru', dest='en')
-    input_title_name_eng = input_title_name_eng.text
-    #ENGLISH SEARCH
-    start_time = time.time()
+    input_text_eng = translate_ru_to_en(query_content)
+    input_title_name_eng = translator.translate(query_title, src='ru', dest='en').text
 
-    input_text_eng = await translator.translate(query_content, src='ru', dest='en')
-    topic, keywords_eng = extract_topic_and_keywords_eng(input_text_eng.text, 6)
+    start_time = time.time()
+    topic, keywords_eng = extract_topic_and_keywords_eng(input_text_eng, 6)
     title_main_words_eng = extract_important_words_en(input_title_name_eng)
     all_keywords_eng = get_word_forms(list(set(keywords_eng + title_main_words_eng)))
     
