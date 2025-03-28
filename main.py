@@ -577,7 +577,7 @@ def translate_ru_to_en(text: str, chunk_size: int = 500) -> str:
 async def get_people_from_query_eng(query_title, query_content, dict_data):
     translator = Translator()
     input_text_eng = translate_ru_to_en(query_content)
-    input_title_name_eng = translator.translate(query_title, src='ru', dest='en').text
+    input_title_name_eng = translate_ru_to_en(query_title)
 
     start_time = time.time()
     topic, keywords_eng = extract_topic_and_keywords_eng(input_text_eng, 6)
