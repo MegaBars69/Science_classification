@@ -1,33 +1,32 @@
-﻿backoff==2.2.1
-certifi==2024.2.2
-charset-normalizer==3.3.2
-click==8.1.7
-colorama==0.4.6
-crossref==0.1.2
-idna==3.7
-joblib==1.4.0
-langdetect==1.0.9
-nltk==3.8.1
+﻿backoff
+certifi
+charset-normalizer
+click
+colorama
+crossref
+idna
+joblib
+langdetect
+nltk
 numpy
-# pandas==2.2.2
-python-dateutil==2.9.0.post0
-pytz==2024.1
-regex==2024.4.16
-requests==2.31.0
-# scikit-learn==1.4.2
-six==1.16.0
-threadpoolctl==3.4.0
-tqdm==4.66.2
-tzdata==2024.1
-urllib3==2.2.1
+# pandas
+python-dateutil
+pytz
+requests
+# scikit-learn
+six
+threadpoolctl
+tqdm
+tzdata
+urllib3
 googletrans==3.1.0a0
 deep-translator==1.11.4
-regex==2023.12.25 
+regex
 
 requests
 crossref
 scipy
-flask
+flask[async]
 googletrans
 scikit-learn
 habanero
@@ -36,3 +35,5 @@ spacy
 torch
 transformers
 googlesearch-python
+huggingface_hub[hf_xet]
+
